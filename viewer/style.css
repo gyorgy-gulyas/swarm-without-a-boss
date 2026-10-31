@@ -1,0 +1,18 @@
+:root { color-scheme: dark; }
+body { margin: 0; background: #080d1a; color: #e9e0cc; font: 14px/1.4 system-ui, sans-serif; }
+main { display: flex; gap: 24px; padding: 20px; align-items: flex-start; flex-wrap: wrap; }
+canvas { width: min(804px, 94vw); height: auto; aspect-ratio: 1; border: 1px solid #2a3350; image-rendering: pixelated; }
+aside { width: 300px; }
+h1 { font-size: 18px; margin: 0 0 12px; }
+label { display: block; margin: 10px 0; }
+label output { float: right; color: #d68c32; }
+input[type=range], select { width: 100%; }
+.buttons { display: flex; gap: 8px; margin: 14px 0; }
+button { flex: 1; padding: 8px; background: #1a2340; color: #e9e0cc; border: 1px solid #3a4570; cursor: pointer; }
+button:hover { background: #24305a; }
+dl { display: grid; grid-template-columns: auto auto; gap: 2px 12px; }
+dt { color: #9aa3c0; }
+dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { color: #9aa3c0; font-size: 12px; }
+.sw { display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 8px; border: 1px solid #3a4570; }
+.sw.bg { background: #080d1a; } .sw.once { background: #e9e0cc; } .sw.dup { background: #d68c32; }

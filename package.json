@@ -1,0 +1,17 @@
+{
+  "name": "swarm-sim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simulator for a leaderless swarm of small survey rovers: Rust engine compiled to WebAssembly, driven from Node.js and the browser",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node host/build.mjs",
+    "test": "cd engine && cargo test --release",
+    "run": "node host/run.mjs",
+    "snapshot": "node host/snapshot.mjs",
+    "serve": "node host/serve.mjs"
+  }
+}

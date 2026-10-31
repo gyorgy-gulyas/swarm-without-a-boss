@@ -1,0 +1,5 @@
+engine/target/
+dist/
+out/
+results/
+node_modules/
