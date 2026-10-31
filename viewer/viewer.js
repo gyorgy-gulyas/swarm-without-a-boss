@@ -18,7 +18,8 @@ const COL = {
   trail: [247, 243, 234],
 };
 const LAYER_K = 8;          // grid layer: pixels per grid cell
-const TRAIL = 14;           // trail length, frames
+const FILM = new URLSearchParams(location.search).has('film');
+const TRAIL = FILM ? 1 : 14; // trail length, frames (none when recording: a frame there is 15 minutes)
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
@@ -327,6 +328,24 @@ function setPlaying(p) {
   playBtn.textContent = playing ? 'Pause' : done ? 'Replay' : 'Play';
 }
 
+function advance(minutes) {
+  const steps = Math.round((minutes * 60) / eng.params()['run.dt_s']);
+  done = eng.step(steps);
+  updateGrid();
+  eng.rovers().forEach((r, k) => {
+    const last = trails[k][trails[k].length - 1];
+    const dx = r.x - last[0], dy = r.y - last[1];
+    if (dx * dx + dy * dy > 0.25) {
+      const target = Math.atan2(-dy, dx);
+      let d = target - (headings[k] ?? target);
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      headings[k] = (headings[k] ?? target) + d * 0.6;
+    }
+    trails[k].push([r.x, r.y]);
+    if (trails[k].length > TRAIL) trails[k].shift();
+  });
+}
+
 function frame() {
   if (playing && !done) {
     const steps = Math.round((Number(speed.value) * 60) / eng.params()['run.dt_s']);
@@ -389,6 +408,23 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerup', () => { drag = null; canvas.classList.remove('dragging'); });
 canvas.addEventListener('dblclick', () => { view.z = 1; view.vx = 0; view.vy = 0; draw(); });
 new ResizeObserver(resize).observe(canvas);
+
+// Recording mode (?film): only the map, driven frame by frame from outside.
+if (FILM) {
+  document.body.classList.add('film');
+  window.film = {
+    reset(overrides) {
+      for (const [k, v] of Object.entries(overrides)) {
+        const el = form.elements[k];
+        if (el instanceof RadioNodeList) { for (const r of el) r.checked = Number(r.value) === v; }
+        else if (el) el.value = v;
+      }
+      reset();
+    },
+    advance(minutes) { if (!done) advance(minutes); draw(); return done; },
+    metrics: () => eng.metrics(),
+  };
+}
 
 terrain = makeTerrain();
 reset();

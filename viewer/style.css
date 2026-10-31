@@ -70,3 +70,8 @@ dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .legend .ld::before { content: ""; width: 10px; height: 10px; background: var(--accent); transform: rotate(45deg); box-shadow: 0 0 0 1.5px #12151c; }
 
 .legend i.sv { width: 26px; }
+
+/* recording mode: the map alone, filling the window */
+body.film main { padding: 0; }
+body.film aside, body.film .hint { display: none; }
+body.film .stage { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; }
