@@ -3,6 +3,7 @@ name = "swarm-engine"
 version = "0.1.0"
 edition = "2021"
 description = "Simulation engine for a leaderless swarm of small survey rovers"
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

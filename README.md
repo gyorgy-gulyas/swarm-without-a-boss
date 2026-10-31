@@ -91,6 +91,10 @@ The score of a run is `J = c_miss · N_miss + c_dup · N_dup`: missed points
 are much worse than points measured twice. Every run is deterministic for a
 given `run.seed`.
 
+## License
+
+MIT, see [LICENSE](LICENSE).
+
 ## Author
 
 György Tamás Gulyás – <https://ggyt.hu>

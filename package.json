@@ -4,6 +4,7 @@
   "private": true,
   "description": "Simulator for a leaderless swarm of small survey rovers: Rust engine compiled to WebAssembly, driven from Node.js and the browser",
   "type": "module",
+  "license": "MIT",
   "engines": {
     "node": ">=20"
   },
