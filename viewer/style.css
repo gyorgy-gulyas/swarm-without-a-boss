@@ -58,7 +58,7 @@ dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 
 .legend { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
 .legend li { display: flex; align-items: center; gap: 10px; }
-.legend i { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex: none; font-style: normal; }
+.legend i { width: 26px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex: none; font-style: normal; }
 .legend .pt::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
 .legend .todo::before { background: rgba(20, 22, 28, 0.55); box-shadow: 0 0 0 4px #8d8b86; }
 .legend .once::before { background: var(--measured); }
@@ -68,3 +68,5 @@ dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .legend .dead { color: var(--dead); font-weight: 700; font-size: 16px; }
 .legend .ln::before { content: ""; width: 16px; height: 2px; background: var(--link); }
 .legend .ld::before { content: ""; width: 10px; height: 10px; background: var(--accent); transform: rotate(45deg); box-shadow: 0 0 0 1.5px #12151c; }
+
+.legend i.sv { width: 26px; }

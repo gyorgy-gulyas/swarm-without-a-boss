@@ -32,6 +32,7 @@ const eng = await Engine.load(await (await fetch('../dist/engine.wasm')).arrayBu
 let playing = false, done = false;
 let grid = null;            // { side, spacing, half, counts, layer, prev }
 let trails = [];
+let headings = [];
 const view = { z: 1, vx: 0, vy: 0 };
 let terrain = null;
 
@@ -119,6 +120,84 @@ function resize() {
   draw();
 }
 
+// ---------- rover sprite ----------
+
+// A small six-wheeled rover seen from above, pointing along +x before rotation.
+// L is the body length in screen pixels.
+function drawRover(x, y, heading, L, alive, measuring) {
+  const W = L * 0.62;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(heading);
+  ctx.globalAlpha = alive ? 1 : 0.55;
+  // shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = L * 0.35; ctx.shadowOffsetX = L * 0.12; ctx.shadowOffsetY = L * 0.12;
+  ctx.fillStyle = 'rgba(0,0,0,0.001)';
+  ctx.fillRect(-L / 2, -W / 2 - L * 0.12, L, W + L * 0.24);
+  ctx.shadowColor = 'transparent';
+  // wheels: three per side
+  ctx.fillStyle = '#1d2129';
+  const ww = L * 0.22, wh = L * 0.14;
+  for (const wx of [-0.36, 0, 0.36]) {
+    for (const side of [-1, 1]) {
+      const cx = wx * L, cy = side * (W / 2 + wh * 0.25);
+      roundRect(cx - ww / 2, cy - wh / 2, ww, wh, wh * 0.4);
+      ctx.fill();
+    }
+  }
+  // body
+  ctx.fillStyle = alive ? '#efe9dc' : '#9a968e';
+  ctx.strokeStyle = COL.outline; ctx.lineWidth = Math.max(1, L * 0.06);
+  roundRect(-L / 2, -W / 2, L, W, L * 0.1);
+  ctx.fill(); ctx.stroke();
+  // solar panel
+  const px = -L * 0.36, pw = L * 0.5, ph = W * 0.6;
+  ctx.fillStyle = alive ? '#3d5f96' : '#5a5f6a';
+  ctx.fillRect(px, -ph / 2, pw, ph);
+  if (L >= 18) {
+    ctx.strokeStyle = 'rgba(160, 190, 255, 0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let k = 1; k < 3; k++) { ctx.moveTo(px + (pw * k) / 3, -ph / 2); ctx.lineTo(px + (pw * k) / 3, ph / 2); }
+    ctx.moveTo(px, 0); ctx.lineTo(px + pw, 0);
+    ctx.stroke();
+  }
+  // mast with sensor head, near the front
+  ctx.fillStyle = alive ? '#f7f3ea' : '#b5b1a8';
+  ctx.strokeStyle = COL.outline; ctx.lineWidth = Math.max(1, L * 0.05);
+  ctx.beginPath(); ctx.arc(L * 0.33, -W * 0.18, L * 0.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // probe arm: glows while measuring
+  ctx.strokeStyle = measuring ? COL.accent : '#5b606b';
+  ctx.lineWidth = Math.max(1.2, L * 0.07);
+  ctx.beginPath(); ctx.moveTo(L / 2, W * 0.15); ctx.lineTo(L / 2 + L * 0.18, W * 0.15); ctx.stroke();
+  if (measuring) {
+    ctx.fillStyle = COL.accent;
+    ctx.shadowColor = COL.accent; ctx.shadowBlur = L * 0.5;
+    ctx.beginPath(); ctx.arc(L / 2 + L * 0.2, W * 0.15, Math.max(1.6, L * 0.09), 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = 'transparent';
+  }
+  ctx.restore();
+  if (!alive) {
+    const d = L * 0.38;
+    for (const [col, w] of [[COL.outline, 4.5], [COL.dead, 2.2]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(x - d, y - d); ctx.lineTo(x + d, y + d);
+      ctx.moveTo(x - d, y + d); ctx.lineTo(x + d, y - d);
+      ctx.stroke();
+    }
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
 // ---------- drawing ----------
 
 function draw() {
@@ -192,29 +271,9 @@ function draw() {
   ctx.fillRect(-6, -6, 12, 12); ctx.strokeRect(-6, -6, 12, 12);
   ctx.restore();
 
-  // rovers
-  for (const r of rovers) {
-    const x = X(r.x), y = Y(r.y);
-    if (!r.alive) {
-      for (const [col, w] of [[COL.outline, 5], [COL.dead, 2.5]]) {
-        ctx.strokeStyle = col; ctx.lineWidth = w;
-        ctx.beginPath();
-        ctx.moveTo(x - 5, y - 5); ctx.lineTo(x + 5, y + 5);
-        ctx.moveTo(x - 5, y + 5); ctx.lineTo(x + 5, y - 5);
-        ctx.stroke();
-      }
-      continue;
-    }
-    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6;
-    ctx.fillStyle = COL.rover; ctx.strokeStyle = COL.outline; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(x, y, 5.2, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.stroke();
-    if (r.measuring) {
-      ctx.fillStyle = COL.accent;
-      ctx.beginPath(); ctx.arc(x, y, 2.4, 0, Math.PI * 2); ctx.fill();
-    }
-  }
+  // rovers: a fixed minimum size on screen, growing a little when zoomed in
+  const L = Math.min(64, Math.max(18, 0.8 * grid.spacing * s));
+  rovers.forEach((r, k) => drawRover(X(r.x), Y(r.y), headings[k] ?? 0, L, r.alive, r.measuring));
 
   hud();
 }
@@ -258,6 +317,7 @@ function reset() {
   done = false;
   initGrid();
   trails = eng.rovers().map((r) => [[r.x, r.y]]);
+  headings = eng.rovers().map((r) => Math.atan2(-r.y, r.x));
   clampView();
   draw();
 }
@@ -273,6 +333,15 @@ function frame() {
     done = eng.step(steps);
     updateGrid();
     eng.rovers().forEach((r, k) => {
+      const last = trails[k][trails[k].length - 1];
+      const dx = r.x - last[0], dy = r.y - last[1];
+      if (dx * dx + dy * dy > 0.25) {
+        // screen y points down, so the world heading is mirrored
+        const target = Math.atan2(-dy, dx);
+        let d = target - (headings[k] ?? target);
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        headings[k] = (headings[k] ?? target) + d * 0.6;
+      }
       trails[k].push([r.x, r.y]);
       if (trails[k].length > TRAIL) trails[k].shift();
     });
